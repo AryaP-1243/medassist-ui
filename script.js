@@ -1,5 +1,4 @@
-const BACKEND_URL = `/ask`;
-
+const BACKEND_URL = "http://localhost:10000/ask";
 let lastSummary = "";
 
 async function sendRequest() {
