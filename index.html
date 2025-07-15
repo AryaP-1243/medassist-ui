@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🩺 MedAssist</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef3f7; padding: 20px; }
+        h1 { color: #2e7d32; }
+        textarea { width: 100%; height: 120px; font-size: 18px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { padding: 12px 24px; margin: 10px 5px; border: none; border-radius: 8px; background: #4caf50; color: white; font-size: 16px; cursor: pointer; }
+        button.voice { background: #6a1b9a; }
+        button.stop { background: #d32f2f; }
+        select { padding: 10px; font-size: 16px; margin-top: 10px; }
+        #output { white-space: pre-wrap; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <h1>🩺 <b>MedAssist</b></h1>
+
+    <textarea id="input" placeholder="Describe your symptoms or ask about a medicine..."></textarea><br>
+
+    <select id="type">
+        <option value="symptom">Symptom</option>
+        <option value="medicine">Medicine</option>
+    </select>
+
+    <select id="voiceLang">
+        <option value="en-IN">Indian English</option>
+        <option value="hi-IN">Hindi</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+    </select><br>
+
+    <button onclick="sendRequest()">Ask</button>
+    <button class="voice" onclick="startVoiceInput()">🎤 Speak Input</button>
+    <button onclick="speakSummary()">🔊 Speak Summary</button>
+    <button class="stop" onclick="stopSpeaking()">⏹️ Stop Voice</button>
+
+    <div id="output">Waiting for input...</div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
