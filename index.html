@@ -116,7 +116,7 @@
 </footer>
 
 <script>
-const BACKEND_URL = "https://medassist-backend-2.onrender.com/ask"; // Replace with your backend URL
+const BACKEND_URL = "https://medassist-backend-jp57.onrender.com//ask"; // Replace with your backend URL
 let currentType = 'medicine';
 
 function setType(type) {
@@ -176,6 +176,66 @@ function startVoiceInput() {
     recognition.onerror = (event) => {
         document.getElementById('output').innerHTML = `<p style="color:red;">Voice input error: ${event.error}</p>`;
     };
+}
+</script>
+
+<script>
+const BACKEND_URL = "https://your-backend-url.onrender.com";
+let userEmail = "";
+
+async function registerUser() {
+    userEmail = prompt("Enter your Email:");
+    const phone = prompt("Enter your Phone:");
+
+    await fetch(`${BACKEND_URL}/register`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email: userEmail, phone: phone})
+    });
+
+    askFoodHistory();
+}
+
+async function askFoodHistory() {
+    const food = prompt("What did you eat in the past 3-4 days? (comma separated)");
+    const foodList = food.split(",").map(f => f.trim());
+
+    const res = await fetch(`${BACKEND_URL}/food-history`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email: userEmail, food_list: foodList})
+    });
+
+    const data = await res.json();
+    alert(`Your current health score is: ${data.health_score}/100`);
+}
+
+async function sendRequest() {
+    const input = document.getElementById('input').value.trim();
+    const type = document.querySelector('.type-button.active').id.replace("Btn", "");
+
+    if (!input) return alert("Please enter your query.");
+
+    const output = document.getElementById('output');
+    output.innerHTML = "⏳ Processing...";
+
+    try {
+        const res = await fetch(`${BACKEND_URL}/ask`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({email: userEmail, message: input, type: type})
+        });
+        const data = await res.json();
+        output.innerHTML = marked.parse(data.response);
+    } catch (err) {
+        output.innerHTML = "❌ Error fetching data.";
+    }
+}
+
+function setType(type) {
+    document.getElementById('medicineBtn').classList.remove('active');
+    document.getElementById('symptomBtn').classList.remove('active');
+    document.getElementById(type + 'Btn').classList.add('active');
 }
 </script>
 
