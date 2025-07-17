@@ -129,20 +129,29 @@ function setType(type) {
 async function sendRequest() {
     const input = document.getElementById('input').value.trim();
     const output = document.getElementById('output');
+    
     if (!input) {
         output.innerHTML = "<p style='color:red;'>❗ Please enter your query.</p>";
         return;
     }
-
+        
     output.innerHTML = "<p>⏳ Processing your request...</p>";
-
+            
     try {
         const res = await fetch(BACKEND_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: input, type: currentType })
         });
+
         const data = await res.json();
+
+        // Defensive check to avoid 'marked' error
+        if (!data.response) {
+            output.innerHTML = `<p style="color:red;">❌ Server returned no valid response. Check backend logs.</p>`;
+            console.error("Invalid server response:", data);
+            return;
+        }
 
         let displayText = data.response;
 
@@ -151,8 +160,9 @@ async function sendRequest() {
             const med = encodeURIComponent(input.replace(/tell me about/i, '').trim());
             displayText += `\n\n**🛒 Where to Buy**\n\n[Buy on 1mg](https://www.1mg.com/search/all?name=${med})`;
         }
-
+    
         output.innerHTML = marked.parse(displayText);
+
     } catch (err) {
         output.innerHTML = `<p style="color:red;">❌ Error fetching data: ${err.message}</p>`;
     }
