@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>🩺 MedAssist - Global AI Health Assistant</title>
+    <title>🩺 MedAssist - Global Medicine Guide</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -43,14 +44,22 @@
         .type-selection { display: flex; gap: 15px; justify-content: center; }
         .type-button {
             flex: 1; padding: 12px 20px; font-size: 16px; font-weight: 600;
-            background: #e0e0e0; color: #555; border: none; border-radius: 10px;
-            cursor: pointer; transition: all 0.3s ease; text-align: center;
+            border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: center;
+        }
+        .type-button.medicine {
+            background: linear-gradient(90deg, #ff5f6d, #ffc371);
+            color: white;
+        }
+        .type-button.symptom {
+            background: linear-gradient(90deg, #36d1dc, #5b86e5);
+            color: white;
         }
         .type-button.active {
-            background: linear-gradient(90deg, #00796b, #48a999); color: white;
-            box-shadow: 0 4px 10px rgba(0,121,107,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+            filter: brightness(1.05);
         }
-        .type-button:hover:not(.active) { background: #d0d0d0; transform: translateY(-1px); }
+        .type-button:hover:not(.active) { opacity: 0.85; }
 
         .button-group { display: flex; gap: 20px; margin-top: 10px; }
         button {
@@ -67,7 +76,6 @@
             background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.08);
             line-height: 1.7; color: #333; max-height: 400px; overflow-y: auto;
         }
-
         footer { margin-top: 40px; text-align: center; color: #fff; font-size: 0.88em; opacity: 0.9; }
 
         @media(max-width: 600px) {
@@ -84,10 +92,14 @@
     <p class="subtitle">Your Global AI Health Guide. Ask about any medicine or symptom.</p>
 
     <div class="input-area">
-        <textarea id="input" placeholder="e.g., Tell me about Acemiz Plus or I have a severe leg pain"></textarea>
+        <textarea id="input" placeholder="e.g., Tell me about Acemiz Plus or What are the symptoms of dengue?"></textarea>
         <div class="type-selection">
-            <button id="medicineBtn" class="type-button active" onclick="setType('medicine')"><i class="fa-solid fa-pills"></i> Medicine</button>
-            <button id="symptomBtn" class="type-button" onclick="setType('symptom')"><i class="fa-solid fa-stethoscope"></i> Symptom</button>
+            <button id="medicineBtn" class="type-button medicine active" onclick="setType('medicine')">
+                <i class="fa-solid fa-pills"></i> Medicine
+            </button>
+            <button id="symptomBtn" class="type-button symptom" onclick="setType('symptom')">
+                <i class="fa-solid fa-stethoscope"></i> Symptom
+            </button>
         </div>
     </div>
 
@@ -100,7 +112,7 @@
 </div>
 
 <footer>
-    © 2025 MedAssist | Built with ❤️ for healthcare. All rights reserved.
+    © 2025 MedAssist | Built with ❤️ for global healthcare. All rights reserved.
 </footer>
 
 <script>
@@ -114,15 +126,9 @@ function setType(type) {
     document.getElementById(type + 'Btn').classList.add('active');
 }
 
-function build1mgLink(query) {
-    const encoded = encodeURIComponent(query.trim());
-    return `[Buy on 1mg](https://www.1mg.com/search/all?name=${encoded})`;
-}
-
 async function sendRequest() {
     const input = document.getElementById('input').value.trim();
     const output = document.getElementById('output');
-
     if (!input) {
         output.innerHTML = "<p style='color:red;'>❗ Please enter your query.</p>";
         return;
@@ -140,28 +146,26 @@ async function sendRequest() {
 
         let displayText = data.response;
 
+        // If medicine, append 1mg link dynamically
         if (currentType === "medicine") {
-            displayText += `\n\n---\n### 🛒 Where to Buy\n${build1mgLink(input)}`;
+            const med = encodeURIComponent(input.replace(/tell me about/i, '').trim());
+            displayText += `\n\n**🛒 Where to Buy**\n\n[Buy on 1mg](https://www.1mg.com/search/all?name=${med})`;
         }
 
         output.innerHTML = marked.parse(displayText);
     } catch (err) {
-        output.innerHTML = `<p style="color:red;">❌ Error: ${err.message}. Please try again.</p>`;
+        output.innerHTML = `<p style="color:red;">❌ Error fetching data: ${err.message}</p>`;
     }
 }
 
 function startVoiceInput() {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    if (!recognition) {
-        alert("Voice Recognition not supported in this browser.");
-        return;
-    }
-
     recognition.lang = "en-IN";
     recognition.interimResults = false;
-    recognition.start();
+    recognition.maxAlternatives = 1;
 
-    document.getElementById('output').innerHTML = "<p>🎤 Listening...</p>";
+    document.getElementById('output').innerHTML = "<p>🎤 Listening... Please speak your query.</p>";
+    recognition.start();
 
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
