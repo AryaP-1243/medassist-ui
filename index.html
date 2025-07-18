@@ -40,7 +40,7 @@
 <div class="container">
   <h1><i class="fa-solid fa-heart-pulse"></i> MedAssist</h1>
 
-  <input id="emailOrPhone" placeholder="Enter Email or Phone (+91XXXXXXXXXX)">
+  <input id="emailOrPhone" placeholder="Enter Phone (+91XXXXXXXXXX)">
   <button onclick="startLogin()">Login / Get OTP</button>
   
   <input id="otpBox" style="display:none;" placeholder="Enter OTP">
@@ -91,16 +91,12 @@ function setType(t) {
 
 function startLogin() {
     const val = document.getElementById("emailOrPhone").value.trim();
-    if (!val) return alert("Please enter your Email or Phone with country code.");
-
-    const food = prompt("What did you eat in the last 2-3 days? (For Health Score)");
-    if (!food) return alert("Food input is required for health tracking.");
+    if (!val) return alert("Please enter your Phone Number with country code (e.g., +91XXXXXXXXXX)");
 
     const appVerifier = new firebase.auth.RecaptchaVerifier('verifyBtn', {size: 'invisible'});
 
     firebase.auth().signInWithPhoneNumber(val, appVerifier).then(confirmationResult => {
         window.confirmationResult = confirmationResult;
-        window.foodHistory = food;
         document.getElementById("otpBox").style.display = 'block';
         document.getElementById("verifyBtn").style.display = 'block';
     }).catch(e => alert(e.message));
@@ -115,10 +111,13 @@ function verifyOTP() {
             userUID = result.user.uid;
             document.getElementById("userDisplay").innerText = result.user.phoneNumber;
 
+            const food = prompt("What did you eat in the last 2-3 days? (For Health Score)");
+            if (!food) return alert("Food input is required for health tracking.");
+
             fetch(`${BACKEND_URL}/verify-otp`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ id_token: idToken, food_history: window.foodHistory })
+                body: JSON.stringify({ id_token: idToken, food_history: food })
             })
             .then(r => r.json())
             .then(data => {
