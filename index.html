@@ -6,8 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+    // If you need Analytics, keep this line, otherwise it's optional
+    // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+
+    // Your web app's Firebase configuration (UPDATED TO YOUR NEW CONFIG)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDO1ZXe300xkaC0XI3Zkg-2vbS0dtLZkWA",
+      authDomain: "medassist-da7e6.firebaseapp.com",
+      projectId: "medassist-da7e6",
+      storageBucket: "medassist-da7e6.firebasestorage.app",
+      messagingSenderId: "129818373865",
+      appId: "1:129818373865:web:739d4e5b9ec28d8d7b4a78",
+      measurementId: "G-7DFLWWRWZP"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app); // Get the Auth service
+    // const analytics = getAnalytics(app); // Initialize analytics if needed
+
+    // Make Firebase functions globally accessible (for onclick/onload)
+    // This is a common pattern when mixing module scripts with inline event handlers.
+    // In a more complex app, you'd refactor to avoid globals.
+    window.auth = auth;
+    window.sendSignInLinkToEmail = sendSignInLinkToEmail;
+    window.isSignInWithEmailLink = isSignInWithEmailLink;
+    window.signInWithEmailLink = signInWithEmailLink;
+    window.onAuthStateChanged = onAuthStateChanged;
+
+    // The rest of your script logic will now have access to these.
+    // The functions below (sendMagicLink, window.onload, ask, etc.)
+    // will now correctly use the Firebase auth module functions.
+    // The entire <script> block for your app logic should also be type="module".
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -41,7 +77,9 @@
   <h1><i class="fa-solid fa-heart-pulse"></i> MedAssist</h1>
 
   <input id="emailInput" placeholder="Enter your Email">
-  <button onclick="sendMagicLink()">Login via Email Link</button> <div id="healthScore"></div>
+  <button onclick="sendMagicLink()">Login via Email Link</button>
+
+  <div id="healthScore"></div>
 
   <textarea id="input" placeholder="e.g., Tell me about Aspirin or I have a fever"></textarea>
   <div class="type-selection">
@@ -58,22 +96,15 @@
 
 <footer>&copy; 2025 MedAssist | Built with ❤️</footer>
 
-<script>
-// Backend URL
-const BACKEND_URL = "https://medassist-backend-jp57.onrender.com"; // Ensure this is correct
+<script type="module">
+// Backend URL - Confirm this is correct for your Render deployment
+const BACKEND_URL = "https://medassist-backend-jp57.onrender.com";
 let currentType = 'medicine';
 let userUID = '';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyADVw6wELYIyCaG__LkszEbRkSwVnsjv8o",
-    authDomain: "medassist-97bc6.firebaseapp.com",
-    projectId: "medassist-97bc6",
-    storageBucket: "medassist-97bc6.appspot.com",
-    messagingSenderId: "456589111482",
-    appId: "1:456589111482:web:e951fe2ef7bb84d17a1283"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+// These are now globally available from the first <script type="module"> block
+// You no longer need to redefine firebaseConfig or initializeApp/getAuth here.
+// You just use the variables (auth, sendSignInLinkToEmail, etc.) that were made global.
 
 function confettiBlast() {
     confetti({particleCount: 150, spread: 90, origin: { y: 0.6 }});
@@ -93,18 +124,21 @@ function sendMagicLink() {
     }
 
     const actionCodeSettings = {
-        url: window.location.href, // This URL should be whitelisted in Firebase Auth settings
+        // THIS URL MUST BE ONE OF THE AUTHORIZED DOMAINS IN FIREBASE CONSOLE!
+        // It should be the URL where your index.html is actually served.
+        url: window.location.href,
         handleCodeInApp: true
     };
 
-    auth.sendSignInLinkToEmail(email, actionCodeSettings)
+    // Use the globally available sendSignInLinkToEmail function
+    window.sendSignInLinkToEmail(window.auth, email, actionCodeSettings)
         .then(() => {
-            window.localStorage.setItem('emailForSignIn', email);
+            window.localStorage.setItem('emailForSignIn', email); // Store email for later
             alert("✅ A login link has been sent to your email! Please check your inbox and click the link to sign in.");
         })
         .catch(e => {
             console.error("Error sending magic link:", e);
-            alert(`Error sending login link: ${e.message}`);
+            alert(`Error sending login link: ${e.message}. Please check your console for details.`);
         });
 }
 
@@ -120,53 +154,49 @@ async function fetchAndDisplayHistory(uid) {
         updateHistory(data.history);
     } catch (error) {
         console.error("Error fetching history:", error);
-        // alert("Failed to load history."); // Uncomment for user feedback
     }
 }
 
 window.onload = function() {
-    // Check if a user is already signed in (e.g., from a previous session)
-    auth.onAuthStateChanged(user => {
+    // Handle user already signed in (e.g., page refresh or returning user)
+    window.onAuthStateChanged(window.auth, user => { // Use globally available onAuthStateChanged and auth
         if (user) {
             userUID = user.uid;
             document.getElementById("userDisplay").innerText = user.email || "Logged in";
-            // Immediately fetch and display history for already logged-in users
             fetchAndDisplayHistory(userUID);
-
-            // Optionally, fetch health score if it's already stored
-            // You might need a /get-health-score endpoint for this
+        } else {
+            document.getElementById("userDisplay").innerText = "Not logged in";
+            userUID = '';
         }
     });
 
-
-    if (auth.isSignInWithEmailLink(window.location.href)) {
+    // Handle the redirect after user clicks the magic link in email
+    if (window.isSignInWithEmailLink(window.auth, window.location.href)) { // Use globally available isSignInWithEmailLink and auth
         let email = window.localStorage.getItem('emailForSignIn');
+
         if (!email) {
-            // Prompt user for email if they opened the link in a different browser/device
             email = prompt("Please enter your email address to complete login:");
             if (!email) {
-                alert("Email is required to complete login.");
-                window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+                alert("Email is required to complete login. Please try logging in again.");
+                window.history.replaceState({}, document.title, window.location.pathname);
                 return;
             }
         }
 
-        auth.signInWithEmailLink(email, window.location.href)
+        window.signInWithEmailLink(window.auth, email, window.location.href) // Use globally available signInWithEmailLink and auth
             .then(result => {
                 userUID = result.user.uid;
                 document.getElementById("userDisplay").innerText = result.user.email;
-                window.localStorage.removeItem('emailForSignIn'); // Clean up localStorage
-                window.history.replaceState({}, document.title, window.location.pathname); // Clean up URL
+                window.localStorage.removeItem('emailForSignIn');
+                window.history.replaceState({}, document.title, window.location.pathname);
 
-                // After successful login, prompt for food history and save user data
-                const food = prompt("Welcome! What did you eat in the last 2-3 days? (For Health Score)");
+                const food = prompt("Welcome! Please tell us what you ate in the last 2-3 days for your Health Score:");
                 if (!food) {
                     alert("Food input is recommended for health score calculation.");
-                    // Continue without food if user cancels, but note the missing data
+                    fetchAndDisplayHistory(userUID);
                     return;
                 }
 
-                // Call the /save-user endpoint (which also calculates health score)
                 fetch(`${BACKEND_URL}/save-user`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
@@ -180,7 +210,6 @@ window.onload = function() {
                     } else {
                         alert("⚠️ Your score is low! Reduce junk food and eat more healthy items like fruits, vegetables, and grilled options.");
                     }
-                    // Fetch and display history after successful login and save
                     fetchAndDisplayHistory(userUID);
                 })
                 .catch(error => {
@@ -191,8 +220,8 @@ window.onload = function() {
             })
             .catch(e => {
                 console.error("Error signing in with email link:", e);
-                alert(`Error completing login: ${e.message}`);
-                window.history.replaceState({}, document.title, window.location.pathname); // Clean URL on error
+                alert(`Error completing login: ${e.message}. Please try logging in again.`);
+                window.history.replaceState({}, document.title, window.location.pathname);
             });
     }
 }
@@ -220,7 +249,6 @@ function ask() {
     .then(r => r.json())
     .then(data => {
         document.getElementById("output").innerHTML = marked.parse(data.response);
-        // After a new query, update the history in the sidebar
         fetchAndDisplayHistory(userUID);
     })
     .catch(error => {
@@ -238,11 +266,11 @@ function updateHistory(h) {
     }
     h.forEach(item => {
         const p = document.createElement('p');
-        p.className = 'history-item'; // Add a class for potential styling
+        p.className = 'history-item';
         p.innerHTML = `${item.type === "medicine" ? "💊" : "🩺"} ${item.message}`;
         p.onclick = () => {
             document.getElementById('input').value = item.message;
-            setType(item.type); // Set the type based on history item
+            setType(item.type);
             ask();
         };
         sidebar.appendChild(p);
@@ -250,7 +278,6 @@ function updateHistory(h) {
 }
 
 function startVoice() {
-    // Check for browser compatibility
     if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
         alert("Sorry, your browser doesn't support Voice Input. Please use a modern browser like Chrome or Edge.");
         return;
@@ -258,8 +285,8 @@ function startVoice() {
 
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     rec.lang = "en-IN";
-    rec.interimResults = false; // Only return final results
-    rec.maxAlternatives = 1; // Only return the most likely result
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
 
     rec.onstart = () => {
         document.getElementById("input").placeholder = "Listening...";
@@ -270,7 +297,7 @@ function startVoice() {
         const transcript = e.results[0][0].transcript;
         document.getElementById("input").value = transcript;
         document.getElementById("input").placeholder = "e.g., Tell me about Aspirin or I have a fever";
-        ask(); // Automatically ask after voice input
+        ask();
     };
 
     rec.onerror = e => {
